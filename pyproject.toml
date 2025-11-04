@@ -1,5 +1,5 @@
 [project]
-name = "pyBROT"
+name = "pyBROTlib"
 version = "0.1.0"
 description = "MQTT interface to BROT telescopes"
 readme = "README.md"
