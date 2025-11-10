@@ -29,6 +29,13 @@ class BROTDome(BROTBase):
                 return DomeShutterStatus.OPEN
             case _:
                 return DomeShutterStatus.UNKNOWN
+    
+    @property
+    def in_motion(self) -> bool:
+        return (self._telemetry.AUXILIARY.DOME.REALPOS == 0.5) or (self._telemetry.AUXILIARY.DOME.MOTION_STATE == 1.0)
+    @property
+    def azimuth(self) -> float:
+        return self._telemetry.AUXILIARY.DOME.AZ
 
     @property
     def status(self) -> DomeStatus:
