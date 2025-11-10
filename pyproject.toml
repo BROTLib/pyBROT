@@ -18,15 +18,15 @@ dev = [
     "flake8>=7.3.0",
 ]
 
-[tool.hatch.build.targets.sdist]
-include = ["BROT"]
+#[tool.hatch.build.targets.sdist]
+#include = ["src/BROT"]
 
-[tool.hatch.build.targets.wheel]
-include = ["BROT"]
+#[tool.hatch.build.targets.wheel]
+#include = ["src/BROT"]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.8,<0.10.0"]
+build-backend = "uv_build"
 
 [tool.setuptools.package-data]
 "pyobs" = ["py.typed"]
