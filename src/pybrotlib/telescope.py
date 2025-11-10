@@ -2,7 +2,6 @@ from enum import Enum
 from typing import Any
 
 from .base import BROTBase
-from .telemetry import Telescope
 
 
 class TelescopeStatus(Enum):
@@ -29,9 +28,9 @@ class BROTAxis(BROTBase):
 
     @property
     def error_state(self) -> int:
-        return getattr(
-            self._telemetry.POSITION.INSTRUMENTAL, self._axis_name
-        ).ERROR_STATE
+        return int(
+            getattr(self._telemetry.POSITION.INSTRUMENTAL, self._axis_name).ERROR_STATE
+        )
 
 
 class BROTTelescope(BROTBase):
@@ -61,7 +60,7 @@ class BROTTelescope(BROTBase):
 
     @property
     def mount_options(self) -> str:
-        return self._telemetry.TELESCOPE.CONFIG.MOUNT_OPTIONS
+        return self._telemetry.TELESCOPE.CONFIG.MOUNTOPTIONS
 
     @property
     def mount(self) -> str:
