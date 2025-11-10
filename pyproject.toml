@@ -1,6 +1,6 @@
 [project]
 name = "pyBROTlib"
-version = "0.1.1"
+version = "0.1.2"
 description = "MQTT interface to BROT telescopes"
 readme = "README.md"
 authors = [{ name = "Tim-Oliver Husser", email = "thusser@uni-goettingen.de" }, { name = "Lukas Melzig", email = "lukas.melzig@stud.uni-goettingen.de" }]
