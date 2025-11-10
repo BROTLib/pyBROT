@@ -1,5 +1,5 @@
 from typing import get_type_hints
-from aiomqtt import Client, Message
+from aiomqtt import Client, Message  # type: ignore
 
 from .transport import Transport
 
@@ -63,7 +63,8 @@ class MQTTTransport(Transport):
                 setattr(obj, s[-1], val)
 
         if "Log" in msg.topic.value:
-            payload = str(msg.payload)[2:-2].split(' message="')
-            log_message = payload[1]
-            log_level = payload[0].split("level=")[1]
-            self.logMessageReceived.emit(log_level, log_message)
+            pass
+            # payload = str(msg.payload)[2:-2].split(' message="')
+            # log_message = payload[1]
+            # log_level = payload[0].split("level=")[1]
+            # self.logMessageReceived.emit(log_level, log_message)
