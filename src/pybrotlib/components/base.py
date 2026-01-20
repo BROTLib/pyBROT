@@ -1,4 +1,4 @@
-from .transport import Transport
+from ..transport import Transport
 
 
 class BROTBase:

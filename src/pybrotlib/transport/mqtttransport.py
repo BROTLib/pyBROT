@@ -63,8 +63,11 @@ class MQTTTransport(Transport):
                 setattr(obj, s[-1], val)
 
         if "Log" in msg.topic.value:
+            await self._process_log(msg)
             pass
             # payload = str(msg.payload)[2:-2].split(' message="')
             # log_message = payload[1]
             # log_level = payload[0].split("level=")[1]
             # self.logMessageReceived.emit(log_level, log_message)
+
+    async def _process_log(self, msg: Message) -> None: ...

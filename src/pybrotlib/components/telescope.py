@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any
 
-from .base import BROTBase
+from ..components.base import BROTBase
 
 
 class TelescopeStatus(Enum):

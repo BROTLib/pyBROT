@@ -1,4 +1,4 @@
-from .base import BROTBase
+from ..components.base import BROTBase
 
 
 class BROTFocus(BROTBase):
@@ -7,7 +7,9 @@ class BROTFocus(BROTBase):
         return self._telemetry.POSITION.INSTRUMENTAL.FOCUS.CURRPOS
 
     async def set(self, focus: float) -> None:
-        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command focus={focus}")
+        await self._transport.publish(
+            f"{self._telescope_name}/Telescope/SET", f"command focus={focus}"
+        )
 
     @property
     def powered(self) -> bool:

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from .base import BROTBase
+from ..components.base import BROTBase
 
 
 class RoofStatus(Enum):

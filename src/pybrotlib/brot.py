@@ -1,8 +1,4 @@
-from .dome import BROTDome
-from .roof import BROTRoof
-from .focus import BROTFocus
-from .mirrorcovers import BROTMirrorCovers
-from .telescope import BROTTelescope
+from .components import *
 from .transport import Transport
 
 
