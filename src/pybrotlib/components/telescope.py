@@ -66,6 +66,14 @@ class BROTTelescope(BROTBase):
     def mount(self) -> str:
         return self._telemetry.TELESCOPE.CONFIG.MOUNT
 
+    @property
+    def right_ascension(self) -> float:
+        return self._telemetry.POSITION.EQUATORIAL.RA_J2000
+
+    @property
+    def declination(self) -> float:
+        return self._telemetry.POSITION.EQUATORIAL.DEC_J2000
+
     async def track(self, ra: float, dec: float) -> None:
         await self._transport.publish(
             f"{self._telescope_name}/Telescope/SET", f"command rightascension={ra}"
