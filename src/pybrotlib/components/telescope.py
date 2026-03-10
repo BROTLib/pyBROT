@@ -8,7 +8,16 @@ class TelescopeStatus(Enum):
     PARKED = "parked"
     ONLINE = "online"
     ERROR = "error"
-    INITPARK = "initpark"
+    INITIALIZING = "initializing"
+    PARKING = "parking"
+    UNKNOWN = "unknown"
+
+
+class MotionState(Enum):
+    UNKNOWN = "unknown"
+    STOPPED = "stopped"
+    SLEWING = "slewing"
+    TRACKING = "tracking"
 
 
 class GlobalTelescopeStatus(Enum):
@@ -141,12 +150,28 @@ class BROTTelescope(BROTBase):
         match self._telemetry.TELESCOPE.READY_STATE:
             case 0.0:
                 return TelescopeStatus.PARKED
+            case 0.3:
+                return TelescopeStatus.INITIALIZING
+            case 0.7:
+                return TelescopeStatus.PARKING
             case 1.0:
                 return TelescopeStatus.ONLINE
             case -1.0:
                 return TelescopeStatus.ERROR
             case _:
-                return TelescopeStatus.INITPARK
+                return TelescopeStatus.UNKNOWN
+
+    @property
+    def motion_state(self) -> MotionState:
+        match self._telemetry.TELESCOPE.MOTION_STATE:
+            case 0.0:
+                return MotionState.STOPPED
+            case 1.0:
+                return MotionState.SLEWING
+            case 8.0:
+                return MotionState.TRACKING
+            case _:
+                return MotionState.UNKNOWN
 
     @property
     def global_status(self) -> GlobalTelescopeStatus:
