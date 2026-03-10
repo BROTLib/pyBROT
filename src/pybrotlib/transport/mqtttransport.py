@@ -23,6 +23,8 @@ class MQTTTransport(Transport):
             self._connected = True
             await client.subscribe("#")
             async for message in client.messages:
+                if self._closing.is_set():
+                    return
                 await self._process_message(message)
 
     async def _process_message(self, msg: Message) -> None:
