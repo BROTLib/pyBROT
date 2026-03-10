@@ -151,9 +151,9 @@ class BROTTelescope(BROTBase):
             case 0.0:
                 return TelescopeStatus.PARKED
             case 0.3:
-                return TelescopeStatus.INITIALIZING
-            case 0.7:
                 return TelescopeStatus.PARKING
+            case 0.7:
+                return TelescopeStatus.INITIALIZING
             case 1.0:
                 return TelescopeStatus.ONLINE
             case -1.0:
