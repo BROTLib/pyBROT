@@ -47,7 +47,6 @@ class MQTTTransport(Transport):
                 if hasattr(obj, token):
                     obj = getattr(obj, token)
                 else:
-                    print("Unknown variable:", key)
                     return
 
             # does it exist?
