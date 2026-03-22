@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -147,9 +148,25 @@ class Cover:
 
 
 @dataclass
+class Sensor:
+    NAME: str = ""
+    DESCRIPTION: str = ""
+    VALUE: float = 0.0
+    UNIT: str = ""
+
+
+class SensorList(dict[int, Sensor]):
+    def __getitem__(self, i: int) -> Any:
+        if i not in self:
+            self[i] = Sensor()
+        return super().__getitem__(i)
+
+
+@dataclass
 class Auxiliary:
     DOME: Dome = field(default_factory=Dome)
     COVER: Cover = field(default_factory=Cover)
+    SENSOR: dict[int, Sensor] = field(default_factory=SensorList)
 
 
 @dataclass
