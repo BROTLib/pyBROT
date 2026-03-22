@@ -44,8 +44,15 @@ class MQTTTransport(Transport):
 
             # find object in telemetry tree
             for token in s[:-1]:
+                is_list = False
+                if "[" in token:
+                    is_list = True
+                    idx = int(token.split("[")[1].split("]")[0])
+                    token = token.split("[")[0]
                 if hasattr(obj, token):
                     obj = getattr(obj, token)
+                    if is_list:
+                        obj = obj[idx]
                 else:
                     return
 
