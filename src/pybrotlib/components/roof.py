@@ -50,6 +50,11 @@ class BROTRoof(BROTBase):
             f"{self._telescope_name}/Telescope/SET", "command dome_close=1"
         )
 
+    async def stop(self) -> None:
+        await self._transport.publish(
+            f"{self._telescope_name}/Telescope/SET", "command dome_stop=1"
+        )
+
     async def reset(self) -> None:
         await self._transport.publish(
             f"{self._telescope_name}/Telescope/SET", "command dome_reset=1"
