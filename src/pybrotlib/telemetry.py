@@ -54,7 +54,8 @@ class ObjectEquatorial:
     DEC_RATE: float = 0.0
     RA: float = 0.0
     DEC: float = 0.0
-    HA: float = 0.0
+    DEC_APPARENT: float = 0.0
+    HA_APPARENT: float = 0.0
 
 
 @dataclass
@@ -119,9 +120,10 @@ class PositionHorizontal:
 
 @dataclass
 class PositionEquatorial:
-    RA_J2000: float = 0.0
-    DEC_J2000: float = 0.0
-    HA_J2000: float = 0.0
+    RA_ICRS: float = 0.0
+    DEC_ICRS: float = 0.0
+    HA_APPARET: float = 0.0
+    DEC_APPARET: float = 0.0
 
 
 @dataclass
