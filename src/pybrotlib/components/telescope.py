@@ -197,12 +197,17 @@ class BROTTelescope(BROTBase):
 
     async def power_on(self) -> None:
         await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command power=true"
+            f"{self._telescope_name}/Telescope/SET", "command power=1"
+        )
+
+    async def power_on_closed(self) -> None:
+        await self._transport.publish(
+            f"{self._telescope_name}/Telescope/SET", "command power=2"
         )
 
     async def stop(self) -> None:
         await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command stop=TRUE"
+            f"{self._telescope_name}/Telescope/SET", "command stop=true"
         )
 
     async def park(self) -> None:
