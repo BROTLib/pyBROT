@@ -22,3 +22,14 @@ class BROTMirrorCovers(BROTBase):
                 return MirrorCoverStatus.OPEN
             case _:
                 return MirrorCoverStatus.UNKNOWN
+
+
+    async def open(self) -> None:
+        await self._transport.publish(
+            f"{self._telescope_name}/Telescope/SET", "command cover_open=1"
+        )
+
+    async def close(self) -> None:
+        await self._transport.publish(
+            f"{self._telescope_name}/Telescope/SET", "command cover_close=1"
+        )
