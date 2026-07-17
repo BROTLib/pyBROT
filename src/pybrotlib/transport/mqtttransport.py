@@ -63,7 +63,7 @@ class MQTTTransport(Transport):
                 if typ == bool:
                     val = value.lower() == "true"
                 elif typ == int:
-                    val = int(value)
+                    val = int(value.removesuffix("i"))
                 elif typ == float:
                     val = float(value)
                 else:
