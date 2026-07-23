@@ -67,7 +67,7 @@ class MQTTTransport(Transport):
                 elif typ == float:
                     val = float(value)
                 else:
-                    val = value
+                    val = value.removeprefix('"').removesuffix('"')
                 setattr(obj, s[-1], val)
 
         if "Log" in msg.topic.value:
