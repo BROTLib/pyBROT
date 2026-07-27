@@ -1,3 +1,4 @@
+import asyncio
 from typing import get_type_hints
 from aiomqtt import Client, Message  # type: ignore
 
@@ -26,6 +27,9 @@ class MQTTTransport(Transport):
                 if self._closing.is_set():
                     return
                 await self._process_message(message)
+                # _process_message has no await -- yield here so a queued
+                # backlog can't starve every other task on this loop.
+                await asyncio.sleep(0)
 
     async def _process_message(self, msg: Message) -> None:
         # Telemetry handling
