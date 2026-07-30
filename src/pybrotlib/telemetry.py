@@ -20,6 +20,7 @@ class TelescopeConfig:
 @dataclass
 class TelescopeStatus:
     GLOBAL: int = 0
+    LOCAL_MODE: int = 0
 
 
 @dataclass
