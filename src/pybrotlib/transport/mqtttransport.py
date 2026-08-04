@@ -69,7 +69,7 @@ class MQTTTransport(Transport):
                 elif typ == int:
                     val = int(value.removesuffix("i"))
                 elif typ == float:
-                    val = float(value)
+                    val = float(value.removesuffix("i"))
                 else:
                     val = value.removeprefix('"').removesuffix('"')
                 setattr(obj, s[-1], val)
