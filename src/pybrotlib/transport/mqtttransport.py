@@ -11,17 +11,26 @@ class MQTTTransport(Transport):
 
         self.host = host
         self.port = port
+        self._client: Client | None = None
+        self._connected_event = asyncio.Event()
 
     def __str__(self) -> str:
         return f"MQTT(host={self.host}, port={self.port})"
 
     async def publish(self, topic: str, message: str) -> None:
-        async with Client(self.host, self.port) as client:
-            await client.publish(topic, payload=message.encode("utf-8"))
+        # reuse the persistent connection from run() instead of opening a fresh one per
+        # call -- each connect/publish/disconnect cycle used to expose every command to
+        # paho-mqtt's blocking (non-executor) socket send, which could stall the whole
+        # event loop for several seconds on a slow/congested broker connection.
+        await self._connected_event.wait()
+        assert self._client is not None
+        await self._client.publish(topic, payload=message.encode("utf-8"))
 
     async def run(self) -> None:
         async with Client(self.host, self.port) as client:
+            self._client = client
             self._connected = True
+            self._connected_event.set()
             await client.subscribe("#")
             async for message in client.messages:
                 if self._closing.is_set():
