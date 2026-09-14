@@ -148,3 +148,73 @@ async def test_publish_blocks_across_disconnect_and_reconnect(
 
     await transport.close()
     await asyncio.wait_for(task, timeout=1)
+
+
+class _OneShotMessages:
+    """Yields a single message, then hangs until the transport is closing."""
+
+    def __init__(self, transport: MQTTTransport, message: object) -> None:
+        self._transport = transport
+        self._message = message
+        self._sent = False
+
+    def __aiter__(self) -> "_OneShotMessages":
+        return self
+
+    async def __anext__(self) -> object:
+        if not self._sent:
+            self._sent = True
+            return self._message
+        await self._transport._closing.wait()
+        raise StopAsyncIteration
+
+
+class _OneShotClient:
+    def __init__(self, transport: MQTTTransport, message: object) -> None:
+        self._transport = transport
+        self._message = message
+
+    async def __aenter__(self) -> "_OneShotClient":
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        return None
+
+    async def subscribe(self, topic: str) -> None:
+        return None
+
+    @property
+    def messages(self) -> _OneShotMessages:
+        return _OneShotMessages(self._transport, self._message)
+
+
+async def test_run_stamps_telemetry_age_on_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from dataclasses import dataclass
+
+    @dataclass
+    class _Msg:
+        topic: object
+
+        class _Topic:
+            value = "brot/Telescope/Log"
+
+    transport = MQTTTransport(host="localhost", port=1883)
+    message = _Msg(topic=_Msg._Topic())
+
+    monkeypatch.setattr(
+        mqtt_module, "Client", lambda host, port: _OneShotClient(transport, message)
+    )
+
+    assert transport.telemetry_age() is None
+    task = asyncio.create_task(transport.run())
+
+    for _ in range(1000):
+        if transport.telemetry_age() is not None:
+            break
+        await asyncio.sleep(0)
+    assert transport.telemetry_age() is not None
+
+    await transport.close()
+    await asyncio.wait_for(task, timeout=1)

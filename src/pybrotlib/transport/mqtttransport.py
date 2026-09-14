@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from typing import get_type_hints
 from aiomqtt import Client, Message, MqttError  # type: ignore
 
@@ -45,6 +46,7 @@ class MQTTTransport(Transport):
                     async for message in client.messages:
                         if self._closing.is_set():
                             return
+                        self._last_message_at = time.monotonic()
                         await self._process_message(message)
                         # _process_message has no await -- yield here so a queued
                         # backlog can't starve every other task on this loop.

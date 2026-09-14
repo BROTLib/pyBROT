@@ -1,9 +1,11 @@
 # Plan: MQTT auto-reconnect for `MQTTTransport`
 
-Status: proposed (2026-09-14)
+Status: implemented, closed (2026-09-14). Shipped in `pybrotlib`
+[1.2.1](https://github.com/BROTLib/pyBROT/releases/tag/v1.2.1); `pyobs-brot`'s floor bumped to
+match and released as [2.0.3](https://github.com/pyobs/pyobs-brot/releases/tag/v2.0.3).
 
 Issue: [pyobs/pyobs-brot#68](https://github.com/pyobs/pyobs-brot/issues/68) — "MQTT client does
-not auto-reconnect after disconnect".
+not auto-reconnect after disconnect" (closed).
 
 ## Problem
 
@@ -37,26 +39,35 @@ Two bugs, not one:
 
 ## Checklist
 
-- [ ] Wrap `run()`'s connection block in a `while not self._closing.is_set(): try: ... except
+- [x] Wrap `run()`'s connection block in a `while not self._closing.is_set(): try: ... except
       aiomqtt.MqttError: ...` reconnect loop.
-- [ ] On disconnect/exception: `self._connected = False`, `self._connected_event.clear()`, log at
+- [x] On disconnect/exception: `self._connected = False`, `self._connected_event.clear()`, log at
       warning level with the exception.
-- [ ] Exponential backoff (1s → 2s → 4s → ... → cap 30s), reset on successful connect.
-- [ ] Make the backoff wait interruptible by `_closing` (e.g. race `asyncio.wait_for(self._closing.wait(),
+- [x] Exponential backoff (1s → 2s → 4s → ... → cap 30s), reset on successful connect.
+- [x] Make the backoff wait interruptible by `_closing` (raced via `asyncio.wait_for(self._closing.wait(),
       timeout=backoff)` instead of a plain `asyncio.sleep`).
-- [ ] Verify `close()` still exits the loop promptly (currently only checked inside the
-      `async for message in client.messages` loop — needs the same check around the reconnect loop
-      itself, otherwise `close()` during a backoff wait doesn't take effect until the wait ends).
-- [ ] Unit test: `Client.__aenter__` raises `MqttError` once then succeeds — `run()` retries and
-      `_connected_event` is only set after the second attempt.
-- [ ] Unit test: simulate a disconnect after a successful connect — `_connected` goes back to
+- [x] Verify `close()` still exits the loop promptly.
+- [x] Unit test: `Client.__aenter__` raises `MqttError` once then succeeds — `run()` retries and
+      `_connected_event` is only set after the second attempt
+      (`tests/test_mqtttransport_reconnect.py::test_run_retries_after_connect_failure`).
+- [x] Unit test: simulate a disconnect after a successful connect — `_connected` goes back to
       `False`, and a `publish()` call issued during the outage blocks (doesn't raise) until
-      reconnected.
-- [ ] Bump `pybrotlib` version; update `pyobs-brot`'s dependency floor
-      (`pyproject.toml`'s `pybrotlib>=1.1.5`) to match — same pattern as the earlier `pybrotlib`
-      1.1.5 event-loop-starvation fix (see `pyobs-core/specs/plans/2026-07-22-ejabberd-throughput-benchmarking.md`,
-      "A real, separate bug *was* found and fixed along the way").
-- [ ] Close pyobs-brot#68, referencing the release.
+      reconnected (`tests/test_mqtttransport_reconnect.py::test_publish_blocks_across_disconnect_and_reconnect`).
+- [x] Bump `pybrotlib` version (1.2.0 → 1.2.1); update `pyobs-brot`'s dependency floor to
+      `pybrotlib>=1.2.1` and release `pyobs-brot` 2.0.3 to match — same pattern as the earlier
+      `pybrotlib` 1.1.5 event-loop-starvation fix (see
+      `pyobs-core/specs/plans/2026-07-22-ejabberd-throughput-benchmarking.md`, "A real, separate bug
+      *was* found and fixed along the way").
+- [x] Close pyobs-brot#68, referencing the release.
+
+## Implementation note
+
+The first pass put the `_connected`/`_connected_event` reset in a `finally` attached to the whole
+`try/except`, which only runs *after* the `except` block's own backoff `await` completes — so
+`publish()` didn't actually block during the backoff window, reproducing bug #2 inside the fix
+meant to close it. Caught by
+`test_publish_blocks_across_disconnect_and_reconnect` failing on the first run. Fixed by resetting
+state immediately at the top of the `except` block, before the backoff wait.
 
 ## Non-goals
 
