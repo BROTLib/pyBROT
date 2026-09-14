@@ -1,8 +1,14 @@
 import asyncio
+import logging
 from typing import get_type_hints
-from aiomqtt import Client, Message  # type: ignore
+from aiomqtt import Client, Message, MqttError  # type: ignore
 
 from .transport import Transport
+
+log = logging.getLogger(__name__)
+
+_INITIAL_BACKOFF = 1.0
+_MAX_BACKOFF = 30.0
 
 
 class MQTTTransport(Transport):
@@ -27,18 +33,43 @@ class MQTTTransport(Transport):
         await self._client.publish(topic, payload=message.encode("utf-8"))
 
     async def run(self) -> None:
-        async with Client(self.host, self.port) as client:
-            self._client = client
-            self._connected = True
-            self._connected_event.set()
-            await client.subscribe("#")
-            async for message in client.messages:
+        backoff = _INITIAL_BACKOFF
+        while not self._closing.is_set():
+            try:
+                async with Client(self.host, self.port) as client:
+                    self._client = client
+                    self._connected = True
+                    self._connected_event.set()
+                    backoff = _INITIAL_BACKOFF
+                    await client.subscribe("#")
+                    async for message in client.messages:
+                        if self._closing.is_set():
+                            return
+                        await self._process_message(message)
+                        # _process_message has no await -- yield here so a queued
+                        # backlog can't starve every other task on this loop.
+                        await asyncio.sleep(0)
+            except MqttError as e:
+                self._connected = False
+                self._connected_event.clear()
                 if self._closing.is_set():
                     return
-                await self._process_message(message)
-                # _process_message has no await -- yield here so a queued
-                # backlog can't starve every other task on this loop.
-                await asyncio.sleep(0)
+                log.warning(
+                    "MQTT connection to %s:%d lost (%s), reconnecting in %.1fs.",
+                    self.host,
+                    self.port,
+                    e,
+                    backoff,
+                )
+                try:
+                    await asyncio.wait_for(self._closing.wait(), timeout=backoff)
+                    return
+                except TimeoutError:
+                    pass
+                backoff = min(backoff * 2, _MAX_BACKOFF)
+            finally:
+                self._connected = False
+                self._connected_event.clear()
 
     async def _process_message(self, msg: Message) -> None:
         # Telemetry handling
