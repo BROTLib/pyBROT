@@ -1,6 +1,9 @@
 # Plan: multi-source weather publishing
 
-Status: implemented, PR open.
+Status: implemented, closed (2026-09-22). Shipped in `pybrotlib`
+[1.3.0](https://github.com/BROTLib/pyBROT/releases/tag/v1.3.0); wired up downstream in
+[BROTLib/BROTgui#5](https://github.com/BROTLib/BROTgui/pull/5) and
+[pyobs/pyobs-brot#74](https://github.com/pyobs/pyobs-brot/pull/74).
 
 Issue: [BROTLib/pyBROT#32](https://github.com/BROTLib/pyBROT/issues/32) — "Publish weather
 station readings to BROTLib's {site}/Telescope/SET topic" (open).
@@ -141,7 +144,7 @@ the same way there rather than pyBROT reading `config.yml` itself.
       missing source data).
 - [x] README: short usage section.
 - [x] `specs/index.md`: add a bullet for this plan doc.
-- [ ] Close BROTLib/pyBROT#32 once shipped, referencing the release (same pattern as
+- [x] Close BROTLib/pyBROT#32 once shipped, referencing the release (same pattern as
       `mqtt-reconnect.md`'s checklist item for pyobs-brot#68).
 
 ## Non-goals
