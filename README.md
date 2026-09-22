@@ -57,6 +57,27 @@ transport and telescope name:
 All commands are fire-and-forget MQTT publishes; callers are expected to poll telemetry
 (directly, or via the component's status properties) to observe the result.
 
+## Weather
+
+`pybrotlib.weather` publishes live temperature/humidity/pressure onto a telescope's
+`{site}/Telescope/SET` topic, for sites where a Python process has access to a weather source.
+Pick a `WeatherSource` and hand it to a `WeatherPublisher` alongside your transport:
+
+```python
+from pybrotlib.weather import PyobsWeatherSource, WeatherPublisher
+# or: from pybrotlib.weather import FileWeatherSource
+
+source = PyobsWeatherSource("https://weather.example.org")
+weather = WeatherPublisher(transport, "MyTelescope", source, interval=60, max_age=300)
+
+asyncio.create_task(weather.run())
+```
+
+`max_age` (seconds) guards against publishing a stale reading: BROTLib has no way to tell a fresh
+value from a stale one once it's received, so a source that's alive but returning an old cached
+reading is caught here instead. A reading missing one field (e.g. a broken pressure sensor) still
+publishes the fields it does have.
+
 ## Development
 
 ```bash
