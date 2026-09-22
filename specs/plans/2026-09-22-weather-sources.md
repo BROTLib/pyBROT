@@ -1,6 +1,6 @@
 # Plan: multi-source weather publishing
 
-Status: not started.
+Status: implemented, PR open.
 
 Issue: [BROTLib/pyBROT#32](https://github.com/BROTLib/pyBROT/issues/32) — "Publish weather
 station readings to BROTLib's {site}/Telescope/SET topic" (open).
@@ -130,16 +130,17 @@ the same way there rather than pyBROT reading `config.yml` itself.
 
 ## Checklist
 
-- [ ] Add `httpx` and `pyyaml` to `pyproject.toml` dependencies.
-- [ ] `src/pybrotlib/weather/source.py`: `WeatherReading`, `WeatherSource`.
-- [ ] `src/pybrotlib/weather/pyobs.py`: `PyobsWeatherSource`.
-- [ ] `src/pybrotlib/weather/file.py`: `FileWeatherSource`.
-- [ ] `src/pybrotlib/weather/publisher.py`: `WeatherPublisher`.
-- [ ] `src/pybrotlib/weather/__init__.py`: exports.
-- [ ] Unit tests for all three, including the publisher's skip logic (bad field, stale reading,
+- [x] Add `httpx` and `pyyaml` to `pyproject.toml` dependencies (plus `types-PyYAML` as a dev-only
+      mypy stub).
+- [x] `src/pybrotlib/weather/source.py`: `WeatherReading`, `WeatherSource`.
+- [x] `src/pybrotlib/weather/pyobs.py`: `PyobsWeatherSource`.
+- [x] `src/pybrotlib/weather/file.py`: `FileWeatherSource`.
+- [x] `src/pybrotlib/weather/publisher.py`: `WeatherPublisher`.
+- [x] `src/pybrotlib/weather/__init__.py`: exports.
+- [x] Unit tests for all three, including the publisher's skip logic (bad field, stale reading,
       missing source data).
-- [ ] README: short usage section.
-- [ ] `specs/index.md`: add a bullet for this plan doc.
+- [x] README: short usage section.
+- [x] `specs/index.md`: add a bullet for this plan doc.
 - [ ] Close BROTLib/pyBROT#32 once shipped, referencing the release (same pattern as
       `mqtt-reconnect.md`'s checklist item for pyobs-brot#68).
 
