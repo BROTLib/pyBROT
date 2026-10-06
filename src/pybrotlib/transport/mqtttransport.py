@@ -47,7 +47,10 @@ class MQTTTransport(Transport):
                         if self._closing.is_set():
                             return
                         self._last_message_at = time.monotonic()
-                        await self._process_message(message)
+                        try:
+                            await self._process_message(message)
+                        except Exception:
+                            log.exception("Error processing message on %s.", message.topic.value)
                         # _process_message has no await -- yield here so a queued
                         # backlog can't starve every other task on this loop.
                         await asyncio.sleep(0)
@@ -81,7 +84,12 @@ class MQTTTransport(Transport):
                 return
 
             # analyse message
-            key, value = msg.payload.decode("utf-8").split(" ")[1].split("=")
+            text = msg.payload.decode("utf-8", errors="replace")
+            try:
+                key, value = text.split(" ")[1].split("=")
+            except (IndexError, ValueError):
+                log.warning("Malformed telemetry on %s: %r", msg.topic.value, text)
+                return
             s = key.upper().split(".")
             obj = self.telemetry
 
