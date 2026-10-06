@@ -69,6 +69,16 @@ async def test_unknown_path_is_ignored() -> None:
     await transport._process_message(msg)  # must not raise
 
 
+@pytest.mark.parametrize("payload", ["", "foo", "0", "0 NOEQUALS", "0 A=1=2"])
+async def test_malformed_telemetry_is_ignored(payload: str, caplog: pytest.LogCaptureFixture) -> None:
+    # regression test: a payload without a field used to raise IndexError and kill run().
+    transport = make_transport()
+    msg = make_message("brot/Telescope/Telemetry", payload)
+    await transport._process_message(msg)  # must not raise
+    assert "Malformed telemetry" in caplog.text
+    assert transport.data == {}
+
+
 async def test_non_bytes_payload_is_ignored() -> None:
     transport = make_transport()
     msg = make_message("brot/Telescope/Telemetry", "0 TELESCOPE.READY_STATE=1.0")
