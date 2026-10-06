@@ -44,6 +44,15 @@ async def test_string_field_strips_quotes() -> None:
     assert transport.telemetry.TELESCOPE.INFO.NAME == "MyScope"
 
 
+@pytest.mark.parametrize("name", ["My Scope", "a=b", "x y=z"])
+async def test_string_field_with_space_or_equals(name: str) -> None:
+    # regression test: split(" ")/split("=") used to truncate or reject such values.
+    transport = make_transport()
+    msg = make_message("brot/Telescope/Telemetry", f'0 TELESCOPE.INFO.NAME="{name}"')
+    await transport._process_message(msg)
+    assert transport.telemetry.TELESCOPE.INFO.NAME == name
+
+
 async def test_bool_field_parsed() -> None:
     @dataclass
     class FakeTelemetry:
@@ -69,7 +78,7 @@ async def test_unknown_path_is_ignored() -> None:
     await transport._process_message(msg)  # must not raise
 
 
-@pytest.mark.parametrize("payload", ["", "foo", "0", "0 NOEQUALS", "0 A=1=2"])
+@pytest.mark.parametrize("payload", ["", "foo", "0", "0 NOEQUALS", "0 =1"])
 async def test_malformed_telemetry_is_ignored(payload: str, caplog: pytest.LogCaptureFixture) -> None:
     # regression test: a payload without a field used to raise IndexError and kill run().
     transport = make_transport()

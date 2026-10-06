@@ -85,9 +85,9 @@ class MQTTTransport(Transport):
 
             # analyse message
             text = msg.payload.decode("utf-8", errors="replace")
-            try:
-                key, value = text.split(" ")[1].split("=")
-            except (IndexError, ValueError):
+            _, _, field = text.partition(" ")
+            key, sep, value = field.partition("=")
+            if not sep or not key:
                 log.warning("Malformed telemetry on %s: %r", msg.topic.value, text)
                 return
             s = key.upper().split(".")
