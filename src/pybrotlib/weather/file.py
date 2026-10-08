@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 
 class FileWeatherSource(WeatherSource):
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
 
     async def read(self) -> WeatherReading | None:

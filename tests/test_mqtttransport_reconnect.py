@@ -23,9 +23,7 @@ class _FakeMessages:
         drop_wait = asyncio.ensure_future(self._drop.wait())
         closing_wait = asyncio.ensure_future(self._transport._closing.wait())
         try:
-            await asyncio.wait(
-                [drop_wait, closing_wait], return_when=asyncio.FIRST_COMPLETED
-            )
+            await asyncio.wait([drop_wait, closing_wait], return_when=asyncio.FIRST_COMPLETED)
         finally:
             drop_wait.cancel()
             closing_wait.cancel()
@@ -203,9 +201,7 @@ async def test_run_stamps_telemetry_age_on_message(
     transport = MQTTTransport(host="localhost", port=1883)
     message = _Msg(topic=_Msg._Topic())
 
-    monkeypatch.setattr(
-        mqtt_module, "Client", lambda host, port: _OneShotClient(transport, message)
-    )
+    monkeypatch.setattr(mqtt_module, "Client", lambda host, port: _OneShotClient(transport, message))
 
     assert transport.telemetry_age() is None
     task = asyncio.create_task(transport.run())

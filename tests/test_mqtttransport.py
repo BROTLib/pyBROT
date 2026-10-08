@@ -11,7 +11,14 @@ def make_transport() -> MQTTTransport:
 
 
 def make_message(topic: str, payload: str) -> Message:
-    return Message(topic=topic, payload=payload.encode("utf-8"), qos=0, retain=False, mid=0, properties=None)
+    return Message(
+        topic=topic,
+        payload=payload.encode("utf-8"),
+        qos=0,
+        retain=False,
+        mid=0,
+        properties=None,
+    )
 
 
 async def test_float_field_parsed() -> None:
@@ -62,7 +69,7 @@ async def test_bool_field_parsed() -> None:
     transport.telemetry = FakeTelemetry()  # type: ignore[assignment]
     msg = make_message("brot/Telescope/Telemetry", "0 FLAG=true")
     await transport._process_message(msg)
-    assert transport.telemetry.FLAG is True
+    assert transport.telemetry.FLAG is True  # pyrefly: ignore[missing-attribute]
 
 
 async def test_indexed_sensor_field() -> None:
@@ -108,3 +115,42 @@ async def test_int_suffix_variants(value: str) -> None:
     msg = make_message("brot/Telescope/Telemetry", f"0 TELESCOPE.CONFIG.CAPABILITIES={value}")
     await transport._process_message(msg)
     assert transport.telemetry.TELESCOPE.CONFIG.CAPABILITIES == int(value.removesuffix("i"))
+
+
+TS = "1791449700123456700"
+
+
+@pytest.mark.parametrize("suffix", ["", f" {TS}"])
+async def test_bool_field_with_optional_timestamp(suffix: str) -> None:
+    # regression test: "true <ts>" used to read as False.
+    @dataclass
+    class FakeTelemetry:
+        FLAG: bool = False
+
+    transport = make_transport()
+    transport.telemetry = FakeTelemetry()  # type: ignore[assignment]
+    await transport._process_message(make_message("brot/Telescope/Telemetry", f"0 FLAG=true{suffix}"))
+    assert transport.telemetry.FLAG is True  # pyrefly: ignore[missing-attribute]
+    assert transport.data["FLAG"] == "true"
+
+
+@pytest.mark.parametrize("suffix", ["", f" {TS}"])
+async def test_numeric_fields_with_optional_timestamp(suffix: str) -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telescope/Telemetry", f"0 TELESCOPE.READY_STATE=1.5{suffix}"))
+    await transport._process_message(
+        make_message("brot/Telescope/Telemetry", f"0 TELESCOPE.CONFIG.CAPABILITIES=5i{suffix}")
+    )
+    assert transport.telemetry.TELESCOPE.READY_STATE == 1.5
+    assert transport.telemetry.TELESCOPE.CONFIG.CAPABILITIES == 5
+
+
+@pytest.mark.parametrize("name", ["MyScope", "My Scope", "a=b", "x y=z", 'say \\"hi\\" now'])
+@pytest.mark.parametrize("suffix", ["", f" {TS}"])
+async def test_string_field_with_optional_timestamp(name: str, suffix: str) -> None:
+    transport = make_transport()
+    await transport._process_message(
+        make_message("brot/Telescope/Telemetry", f'0 TELESCOPE.INFO.NAME="{name}"{suffix}')
+    )
+    assert transport.telemetry.TELESCOPE.INFO.NAME == name
+    assert transport.data["TELESCOPE.INFO.NAME"] == f'"{name}"'

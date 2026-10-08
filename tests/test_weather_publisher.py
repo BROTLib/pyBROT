@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from pybrotlib.weather import WeatherPublisher, WeatherReading, WeatherSource
 
@@ -25,7 +25,12 @@ def _publisher(
     transport: _FakeTransport,
     max_age: float | None = 300.0,
 ) -> WeatherPublisher:
-    return WeatherPublisher(transport, "brot", _FakeSource(reading), max_age=max_age)
+    return WeatherPublisher(
+        transport,  # pyrefly: ignore[bad-argument-type]
+        "brot",
+        _FakeSource(reading),
+        max_age=max_age,
+    )
 
 
 async def test_good_reading_publishes_all_three_fields() -> None:
@@ -63,9 +68,7 @@ async def test_partial_reading_publishes_only_available_fields() -> None:
 
 async def test_stale_reading_publishes_nothing() -> None:
     transport = _FakeTransport()
-    reading = WeatherReading(
-        temperature=12.5, time=datetime.now(timezone.utc) - timedelta(hours=1)
-    )
+    reading = WeatherReading(temperature=12.5, time=datetime.now(UTC) - timedelta(hours=1))
 
     await _publisher(reading, transport, max_age=300.0)._publish_once()
 
@@ -74,9 +77,7 @@ async def test_stale_reading_publishes_nothing() -> None:
 
 async def test_fresh_reading_within_max_age_publishes() -> None:
     transport = _FakeTransport()
-    reading = WeatherReading(
-        temperature=12.5, time=datetime.now(timezone.utc) - timedelta(seconds=10)
-    )
+    reading = WeatherReading(temperature=12.5, time=datetime.now(UTC) - timedelta(seconds=10))
 
     await _publisher(reading, transport, max_age=300.0)._publish_once()
 
@@ -87,7 +88,7 @@ async def test_naive_timestamp_is_treated_as_utc() -> None:
     transport = _FakeTransport()
     reading = WeatherReading(
         temperature=12.5,
-        time=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=1),
+        time=datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=1),
     )
 
     await _publisher(reading, transport, max_age=300.0)._publish_once()
@@ -97,9 +98,7 @@ async def test_naive_timestamp_is_treated_as_utc() -> None:
 
 async def test_no_max_age_never_treats_reading_as_stale() -> None:
     transport = _FakeTransport()
-    reading = WeatherReading(
-        temperature=12.5, time=datetime.now(timezone.utc) - timedelta(days=30)
-    )
+    reading = WeatherReading(temperature=12.5, time=datetime.now(UTC) - timedelta(days=30))
 
     await _publisher(reading, transport, max_age=None)._publish_once()
 
@@ -109,7 +108,12 @@ async def test_no_max_age_never_treats_reading_as_stale() -> None:
 async def test_run_publishes_on_interval_until_closed() -> None:
     transport = _FakeTransport()
     reading = WeatherReading(temperature=1.0)
-    publisher = WeatherPublisher(transport, "brot", _FakeSource(reading), interval=0.01)
+    publisher = WeatherPublisher(
+        transport,  # pyrefly: ignore[bad-argument-type]
+        "brot",
+        _FakeSource(reading),
+        interval=0.01,
+    )
 
     task = asyncio.create_task(publisher.run())
     for _ in range(1000):

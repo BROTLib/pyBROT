@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..transport import Transport
 from .source import WeatherReading, WeatherSource
@@ -18,7 +18,7 @@ class WeatherPublisher:
         source: WeatherSource,
         interval: float = 60.0,
         max_age: float | None = 300.0,
-    ):
+    ) -> None:
         self.transport = transport
         self.site = site
         self.source = source
@@ -55,20 +55,14 @@ class WeatherPublisher:
         for field in _FIELDS:
             value = getattr(reading, field)
             if value is not None:
-                await self.transport.publish(
-                    f"{self.site}/Telescope/SET", f"command {field}={value}"
-                )
+                await self.transport.publish(f"{self.site}/Telescope/SET", f"command {field}={value}")
 
     def _is_stale(self, reading: WeatherReading) -> bool:
         if self.max_age is None or reading.time is None:
             return False
         # a naive timestamp (e.g. from a hand-written weather file) is assumed to already be UTC
-        time = (
-            reading.time
-            if reading.time.tzinfo is not None
-            else reading.time.replace(tzinfo=timezone.utc)
-        )
-        age = (datetime.now(timezone.utc) - time).total_seconds()
+        time = reading.time if reading.time.tzinfo is not None else reading.time.replace(tzinfo=UTC)
+        age = (datetime.now(UTC) - time).total_seconds()
         return age > self.max_age
 
 

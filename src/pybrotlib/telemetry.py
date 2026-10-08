@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Any
 
 
 @dataclass
@@ -159,7 +158,7 @@ class Sensor:
 
 
 class SensorList(dict[int, Sensor]):
-    def __getitem__(self, i: int) -> Any:
+    def __getitem__(self, i: int) -> Sensor:
         if i not in self:
             self[i] = Sensor()
         return super().__getitem__(i)

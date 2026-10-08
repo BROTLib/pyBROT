@@ -1,13 +1,12 @@
 import asyncio
 import time
-from typing import Any
 
 from ..telemetry import Telemetry
 
 
 class Transport:
     def __init__(self) -> None:
-        self.data: dict[str, Any] = {}
+        self.data: dict[str, str] = {}
         self.telemetry = Telemetry()
         self._connected = False
         self._closing = asyncio.Event()

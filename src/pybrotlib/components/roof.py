@@ -40,24 +40,16 @@ class BROTRoof(BROTBase):
         return self._telemetry.AUXILIARY.DOME.ERROR_STATE != 0
 
     async def open(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command dome_open=1"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command dome_open=1")
 
     async def close(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command dome_close=1"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command dome_close=1")
 
     async def stop(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command dome_stop=1"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command dome_stop=1")
 
     async def reset(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command dome_reset=1"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command dome_reset=1")
 
 
 __all__ = ["BROTRoof", "RoofStatus"]

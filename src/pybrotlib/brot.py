@@ -1,9 +1,9 @@
-from .components import *
+from .components import BROTDome, BROTFocus, BROTMirrorCovers, BROTRoof, BROTTelescope
 from .transport import Transport
 
 
 class BROT:
-    def __init__(self, transport: Transport, telescope_name: str):
+    def __init__(self, transport: Transport, telescope_name: str) -> None:
         self.transport = transport
         self.dome = BROTDome(transport, telescope_name)
         self.roof = BROTRoof(transport, telescope_name)

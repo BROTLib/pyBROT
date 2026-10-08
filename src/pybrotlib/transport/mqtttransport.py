@@ -2,7 +2,8 @@ import asyncio
 import logging
 import time
 from typing import get_type_hints
-from aiomqtt import Client, Message, MqttError  # type: ignore
+
+from aiomqtt import Client, Message, MqttError
 
 from .transport import Transport
 
@@ -12,8 +13,22 @@ _INITIAL_BACKOFF = 1.0
 _MAX_BACKOFF = 30.0
 
 
+def _split_field(field: str) -> tuple[str, str] | None:
+    """Split an Influx line-protocol field set into (key, value), dropping an optional trailing timestamp."""
+    key, sep, rest = field.partition("=")
+    if not sep or not key:
+        return None
+    if rest.startswith('"'):
+        # quoted string: runs to the closing unescaped quote and may contain spaces
+        i = 1
+        while i < len(rest) and rest[i] != '"':
+            i += 2 if rest[i] == "\\" else 1
+        return key, rest[: i + 1]
+    return key, rest.partition(" ")[0]
+
+
 class MQTTTransport(Transport):
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int) -> None:
         super().__init__()
 
         self.host = host
@@ -86,10 +101,11 @@ class MQTTTransport(Transport):
             # analyse message
             text = msg.payload.decode("utf-8", errors="replace")
             _, _, field = text.partition(" ")
-            key, sep, value = field.partition("=")
-            if not sep or not key:
+            parsed = _split_field(field)
+            if parsed is None:
                 log.warning("Malformed telemetry on %s: %r", msg.topic.value, text)
                 return
+            key, value = parsed
             s = key.upper().split(".")
             obj = self.telemetry
 
@@ -114,11 +130,11 @@ class MQTTTransport(Transport):
             val: bool | int | float | str
             if hasattr(obj, s[-1]):
                 typ = get_type_hints(obj)[s[-1]]
-                if typ == bool:
+                if typ is bool:
                     val = value.lower() == "true"
-                elif typ == int:
+                elif typ is int:
                     val = int(value.removesuffix("i"))
-                elif typ == float:
+                elif typ is float:
                     val = float(value.removesuffix("i"))
                 else:
                     val = value.removeprefix('"').removesuffix('"')
