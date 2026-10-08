@@ -1,11 +1,13 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
 
+from pybrotlib.transport import Transport
 from pybrotlib.weather import WeatherPublisher, WeatherReading, WeatherSource
 
 
-class _FakeTransport:
+class _FakeTransport(Transport):
     def __init__(self) -> None:
+        super().__init__()
         self.published: list[tuple[str, str]] = []
 
     async def publish(self, topic: str, message: str) -> None:
@@ -26,7 +28,7 @@ def _publisher(
     max_age: float | None = 300.0,
 ) -> WeatherPublisher:
     return WeatherPublisher(
-        transport,  # pyrefly: ignore[bad-argument-type]
+        transport,
         "brot",
         _FakeSource(reading),
         max_age=max_age,
@@ -109,7 +111,7 @@ async def test_run_publishes_on_interval_until_closed() -> None:
     transport = _FakeTransport()
     reading = WeatherReading(temperature=1.0)
     publisher = WeatherPublisher(
-        transport,  # pyrefly: ignore[bad-argument-type]
+        transport,
         "brot",
         _FakeSource(reading),
         interval=0.01,

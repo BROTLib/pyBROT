@@ -75,12 +75,25 @@ class BROTTelescope(BROTBase):
 
     @property
     def right_ascension(self) -> float:
-        # FIXME: telemetry has no RA_J2000 (only RA_ICRS), this raises AttributeError
-        return self._telemetry.POSITION.EQUATORIAL.RA_J2000  # pyrefly: ignore[missing-attribute]
+        """Current RA in hours. Prefers ICRS, falls back to J2000 for PLCs that only publish that."""
+        eq = self._telemetry.POSITION.EQUATORIAL
+        if (
+            "POSITION.EQUATORIAL.RA_ICRS" not in self._transport.data
+            and "POSITION.EQUATORIAL.RA_J2000" in self._transport.data
+        ):
+            return eq.RA_J2000
+        return eq.RA_ICRS
 
     @property
     def declination(self) -> float:
-        return self._telemetry.POSITION.EQUATORIAL.DEC_J2000  # pyrefly: ignore[missing-attribute]
+        """Current Dec in degrees. Prefers ICRS, falls back to J2000 for PLCs that only publish that."""
+        eq = self._telemetry.POSITION.EQUATORIAL
+        if (
+            "POSITION.EQUATORIAL.DEC_ICRS" not in self._transport.data
+            and "POSITION.EQUATORIAL.DEC_J2000" in self._transport.data
+        ):
+            return eq.DEC_J2000
+        return eq.DEC_ICRS
 
     async def track(self, ra: float, dec: float) -> None:
         await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command rightascension={ra}")

@@ -122,6 +122,8 @@ class PositionHorizontal:
 class PositionEquatorial:
     RA_ICRS: float = 0.0
     DEC_ICRS: float = 0.0
+    RA_J2000: float = 0.0
+    DEC_J2000: float = 0.0
     HA_APPARET: float = 0.0
     DEC_APPARET: float = 0.0
 

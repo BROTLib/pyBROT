@@ -110,7 +110,7 @@ class MQTTTransport(Transport):
             obj = self.telemetry
 
             # dict with ALL telemetry
-            self.data[key] = str(value)
+            self.data[key] = value
 
             # find object in telemetry tree
             for token in s[:-1]:

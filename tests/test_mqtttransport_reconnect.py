@@ -91,7 +91,7 @@ async def test_run_retries_after_connect_failure(
     task = asyncio.create_task(transport.run())
 
     await asyncio.wait_for(transport._connected_event.wait(), timeout=1)
-    assert transport.connected is True
+    assert transport.connected
     assert attempts == [True, False]
 
     await transport.close()
@@ -125,7 +125,7 @@ async def test_publish_blocks_across_disconnect_and_reconnect(
 
     task = asyncio.create_task(transport.run())
     await asyncio.wait_for(transport._connected_event.wait(), timeout=1)
-    assert transport.connected is True
+    assert transport.connected
 
     # simulate the broker connection dropping
     drop_events[0].set()
@@ -133,7 +133,7 @@ async def test_publish_blocks_across_disconnect_and_reconnect(
         if not transport.connected:
             break
         await asyncio.sleep(0)
-    assert transport.connected is False
+    assert not transport.connected
     assert not transport._connected_event.is_set()
 
     publish_task = asyncio.create_task(transport.publish("brot/x", "cmd"))

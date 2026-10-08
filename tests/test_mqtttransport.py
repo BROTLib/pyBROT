@@ -66,10 +66,11 @@ async def test_bool_field_parsed() -> None:
         FLAG: bool = False
 
     transport = make_transport()
-    transport.telemetry = FakeTelemetry()  # type: ignore[assignment]
+    fake = FakeTelemetry()
+    transport.telemetry = fake  # type: ignore[assignment]
     msg = make_message("brot/Telescope/Telemetry", "0 FLAG=true")
     await transport._process_message(msg)
-    assert transport.telemetry.FLAG is True  # pyrefly: ignore[missing-attribute]
+    assert fake.FLAG is True
 
 
 async def test_indexed_sensor_field() -> None:
@@ -128,9 +129,10 @@ async def test_bool_field_with_optional_timestamp(suffix: str) -> None:
         FLAG: bool = False
 
     transport = make_transport()
-    transport.telemetry = FakeTelemetry()  # type: ignore[assignment]
+    fake = FakeTelemetry()
+    transport.telemetry = fake  # type: ignore[assignment]
     await transport._process_message(make_message("brot/Telescope/Telemetry", f"0 FLAG=true{suffix}"))
-    assert transport.telemetry.FLAG is True  # pyrefly: ignore[missing-attribute]
+    assert fake.FLAG is True
     assert transport.data["FLAG"] == "true"
 
 
