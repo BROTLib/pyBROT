@@ -5,9 +5,9 @@ from ..telemetry import Telemetry
 
 
 class Transport:
-    def __init__(self, ra_in_hours: bool = True) -> None:
-        # Legacy PLCs publish RA telemetry in hours, newer ones in degrees (BROTLib#37). If True, RA
-        # fields are multiplied by 15 on receipt, so Telemetry always holds degrees.
+    def __init__(self, ra_in_hours: bool = False) -> None:
+        # Legacy PLCs publish RA telemetry in hours, newer ones in degrees (BROTLib#37). Set True for
+        # legacy PLCs: RA fields are then multiplied by 15 on receipt, so Telemetry always holds degrees.
         self.ra_in_hours = ra_in_hours
         self.data: dict[str, str] = {}
         self.telemetry = Telemetry()
