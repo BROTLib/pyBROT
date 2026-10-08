@@ -2,6 +2,8 @@ import asyncio
 import logging
 from datetime import UTC, datetime
 
+from aiomqtt import MqttError
+
 from ..transport import Transport
 from .source import WeatherReading, WeatherSource
 
@@ -36,7 +38,11 @@ class WeatherPublisher:
                 return
             except TimeoutError:
                 pass
-            await self._publish_once()
+            try:
+                await self._publish_once()
+            except (MqttError, TimeoutError) as e:
+                # a failed publish must not end the publisher; retry on the next interval
+                log.warning("Could not publish weather to %s (%s).", self.site, e)
 
     async def _publish_once(self) -> None:
         reading = await self.source.read()

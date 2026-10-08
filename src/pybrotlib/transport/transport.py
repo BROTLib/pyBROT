@@ -21,7 +21,7 @@ class Transport:
     async def run(self) -> None:
         pass
 
-    async def publish(self, topic: str, message: str) -> None:
+    async def publish(self, topic: str, message: str, qos: int = 1) -> None:
         pass
 
     @property

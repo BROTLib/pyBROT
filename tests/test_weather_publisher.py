@@ -10,7 +10,7 @@ class _FakeTransport(Transport):
         super().__init__()
         self.published: list[tuple[str, str]] = []
 
-    async def publish(self, topic: str, message: str) -> None:
+    async def publish(self, topic: str, message: str, qos: int = 1) -> None:
         self.published.append((topic, message))
 
 
@@ -126,3 +126,19 @@ async def test_run_publishes_on_interval_until_closed() -> None:
     await publisher.close()
     await asyncio.wait_for(task, timeout=1)
     assert len(transport.published) >= 2
+
+
+async def test_run_survives_publish_failure() -> None:
+    from aiomqtt import MqttError
+
+    class _FailingTransport(_FakeTransport):
+        async def publish(self, topic: str, message: str, qos: int = 1) -> None:
+            raise MqttError("down")
+
+    reading = WeatherReading(temperature=1.0, humidity=None, pressure=None)
+    publisher = WeatherPublisher(_FailingTransport(), "brot", _FakeSource(reading), interval=0.01)
+    task = asyncio.create_task(publisher.run())
+    await asyncio.sleep(0.05)
+    assert not task.done()
+    await publisher.close()
+    await asyncio.wait_for(task, timeout=1)

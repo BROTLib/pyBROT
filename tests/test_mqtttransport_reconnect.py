@@ -56,7 +56,7 @@ class _FakeClient:
     async def subscribe(self, topic: str) -> None:
         return None
 
-    async def publish(self, topic: str, payload: bytes) -> None:
+    async def publish(self, topic: str, payload: bytes, qos: int = 0) -> None:
         self._published.append((topic, payload))
 
     @property
