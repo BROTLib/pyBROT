@@ -5,10 +5,13 @@ from ..telemetry import Telemetry
 
 
 class Transport:
-    def __init__(self, ra_in_hours: bool = False) -> None:
+    def __init__(self, ra_in_hours: bool = False, multi_field_commands: bool = False) -> None:
         # Legacy PLCs publish RA telemetry in hours, newer ones in degrees (BROTLib#37). Set True for
         # legacy PLCs: RA fields are then multiplied by 15 on receipt, so Telemetry always holds degrees.
         self.ra_in_hours = ra_in_hours
+        # PLCs with BROTLib#39 parse several parameter=value pairs per message, so track()/move() can send one
+        # message instead of three. Older PLCs only read the first pair and would drop the rest: keep False there.
+        self.multi_field_commands = multi_field_commands
         self.data: dict[str, str] = {}
         self.telemetry = Telemetry()
         self._connected = False
