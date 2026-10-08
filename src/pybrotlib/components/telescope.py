@@ -75,7 +75,7 @@ class BROTTelescope(BROTBase):
 
     @property
     def right_ascension(self) -> float:
-        """Current RA in hours. Prefers ICRS, falls back to J2000 for PLCs that only publish that."""
+        """Current RA in degrees. Prefers ICRS, falls back to J2000 for PLCs that only publish that."""
         eq = self._telemetry.POSITION.EQUATORIAL
         if (
             "POSITION.EQUATORIAL.RA_ICRS" not in self._transport.data

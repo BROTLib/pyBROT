@@ -156,3 +156,33 @@ async def test_string_field_with_optional_timestamp(name: str, suffix: str) -> N
     )
     assert transport.telemetry.TELESCOPE.INFO.NAME == name
     assert transport.data["TELESCOPE.INFO.NAME"] == f'"{name}"'
+
+
+@pytest.mark.parametrize("key", ["POSITION.EQUATORIAL.RA_ICRS", "POSITION.EQUATORIAL.RA_J2000", "OBJECT.EQUATORIAL.RA"])
+async def test_ra_converted_from_hours_by_default(key: str) -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telescope/Telemetry", f"0 {key}=2.0"))
+    obj = transport.telemetry
+    for token in key.split("."):
+        obj = getattr(obj, token)
+    assert obj == 30.0
+
+
+async def test_ra_not_converted_for_degree_plc() -> None:
+    transport = MQTTTransport(host="localhost", port=1883, ra_in_hours=False)
+    await transport._process_message(make_message("brot/Telescope/Telemetry", "0 POSITION.EQUATORIAL.RA_ICRS=30.0"))
+    assert transport.telemetry.POSITION.EQUATORIAL.RA_ICRS == 30.0
+
+
+async def test_dec_and_instrumental_ra_never_converted() -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telescope/Telemetry", "0 POSITION.EQUATORIAL.DEC_ICRS=20.0"))
+    await transport._process_message(make_message("brot/Telescope/Telemetry", "0 OBJECT.INSTRUMENTAL.RA=40.0"))
+    assert transport.telemetry.POSITION.EQUATORIAL.DEC_ICRS == 20.0
+    assert transport.telemetry.OBJECT.INSTRUMENTAL.RA == 40.0
+
+
+async def test_apparent_fields_parsed() -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telescope/Telemetry", "0 POSITION.EQUATORIAL.HA_APPARENT=1.5"))
+    assert transport.telemetry.POSITION.EQUATORIAL.HA_APPARENT == 1.5

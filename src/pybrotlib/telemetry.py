@@ -1,3 +1,6 @@
+"""Telemetry tree. All angles are in degrees, including right ascension (hours from legacy PLCs are
+converted by the transport, see ``Transport.ra_in_hours``)."""
+
 from dataclasses import dataclass, field
 
 
@@ -124,8 +127,8 @@ class PositionEquatorial:
     DEC_ICRS: float = 0.0
     RA_J2000: float = 0.0
     DEC_J2000: float = 0.0
-    HA_APPARET: float = 0.0
-    DEC_APPARET: float = 0.0
+    HA_APPARENT: float = 0.0
+    DEC_APPARENT: float = 0.0
 
 
 @dataclass

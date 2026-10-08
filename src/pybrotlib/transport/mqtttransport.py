@@ -9,6 +9,16 @@ from .transport import Transport
 
 log = logging.getLogger(__name__)
 
+# RA telemetry fields that legacy PLCs publish in hours (all other angles are degrees)
+_RA_FIELDS = frozenset(
+    {
+        "OBJECT.EQUATORIAL.RA",
+        "OBJECT.EQUATORIAL.RA_ICRS",
+        "POSITION.EQUATORIAL.RA_ICRS",
+        "POSITION.EQUATORIAL.RA_J2000",
+    }
+)
+
 _INITIAL_BACKOFF = 1.0
 _MAX_BACKOFF = 30.0
 
@@ -28,8 +38,8 @@ def _split_field(field: str) -> tuple[str, str] | None:
 
 
 class MQTTTransport(Transport):
-    def __init__(self, host: str, port: int) -> None:
-        super().__init__()
+    def __init__(self, host: str, port: int, ra_in_hours: bool = True) -> None:
+        super().__init__(ra_in_hours=ra_in_hours)
 
         self.host = host
         self.port = port
@@ -136,6 +146,8 @@ class MQTTTransport(Transport):
                     val = int(value.removesuffix("i"))
                 elif typ is float:
                     val = float(value.removesuffix("i"))
+                    if self.ra_in_hours and ".".join(s) in _RA_FIELDS:
+                        val *= 15.0
                 else:
                     val = value.removeprefix('"').removesuffix('"')
                 setattr(obj, s[-1], val)
