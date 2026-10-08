@@ -1,5 +1,7 @@
+"""Telemetry tree. All angles are in degrees, including right ascension (hours from legacy PLCs are
+converted by the transport, see ``Transport.ra_in_hours``)."""
+
 from dataclasses import dataclass, field
-from typing import Any
 
 
 @dataclass
@@ -123,8 +125,10 @@ class PositionHorizontal:
 class PositionEquatorial:
     RA_ICRS: float = 0.0
     DEC_ICRS: float = 0.0
-    HA_APPARET: float = 0.0
-    DEC_APPARET: float = 0.0
+    RA_J2000: float = 0.0
+    DEC_J2000: float = 0.0
+    HA_APPARENT: float = 0.0
+    DEC_APPARENT: float = 0.0
 
 
 @dataclass
@@ -159,7 +163,7 @@ class Sensor:
 
 
 class SensorList(dict[int, Sensor]):
-    def __getitem__(self, i: int) -> Any:
+    def __getitem__(self, i: int) -> Sensor:
         if i not in self:
             self[i] = Sensor()
         return super().__getitem__(i)

@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Any
 
-from ..components.base import BROTBase
+from ..transport import Transport
+from .base import BROTBase
 
 
 class TelescopeStatus(Enum):
@@ -31,25 +31,23 @@ class GlobalTelescopeStatus(Enum):
 
 
 class BROTAxis(BROTBase):
-    def __init__(self, name: str, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name: str, transport: Transport, telescope_name: str) -> None:
+        super().__init__(transport, telescope_name)
         self._axis_name = name
 
     @property
     def error_state(self) -> int:
-        return int(
-            getattr(self._telemetry.POSITION.INSTRUMENTAL, self._axis_name).ERROR_STATE
-        )
+        return int(getattr(self._telemetry.POSITION.INSTRUMENTAL, self._axis_name).ERROR_STATE)
 
 
 class BROTTelescope(BROTBase):
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.alt = BROTAxis("ALT", *args, **kwargs)
-        self.az = BROTAxis("AZ", *args, **kwargs)
-        self.ha = BROTAxis("HA", *args, **kwargs)
-        self.dec = BROTAxis("DEC", *args, **kwargs)
-        self.focus = BROTAxis("FOCUS", *args, **kwargs)
+    def __init__(self, transport: Transport, telescope_name: str) -> None:
+        super().__init__(transport, telescope_name)
+        self.alt = BROTAxis("ALT", transport, telescope_name)
+        self.az = BROTAxis("AZ", transport, telescope_name)
+        self.ha = BROTAxis("HA", transport, telescope_name)
+        self.dec = BROTAxis("DEC", transport, telescope_name)
+        self.focus = BROTAxis("FOCUS", transport, telescope_name)
 
     @property
     def name(self) -> str:
@@ -77,33 +75,35 @@ class BROTTelescope(BROTBase):
 
     @property
     def right_ascension(self) -> float:
-        return self._telemetry.POSITION.EQUATORIAL.RA_J2000
+        """Current RA in degrees. Prefers ICRS, falls back to J2000 for PLCs that only publish that."""
+        eq = self._telemetry.POSITION.EQUATORIAL
+        if (
+            "POSITION.EQUATORIAL.RA_ICRS" not in self._transport.data
+            and "POSITION.EQUATORIAL.RA_J2000" in self._transport.data
+        ):
+            return eq.RA_J2000
+        return eq.RA_ICRS
 
     @property
     def declination(self) -> float:
-        return self._telemetry.POSITION.EQUATORIAL.DEC_J2000
+        """Current Dec in degrees. Prefers ICRS, falls back to J2000 for PLCs that only publish that."""
+        eq = self._telemetry.POSITION.EQUATORIAL
+        if (
+            "POSITION.EQUATORIAL.DEC_ICRS" not in self._transport.data
+            and "POSITION.EQUATORIAL.DEC_J2000" in self._transport.data
+        ):
+            return eq.DEC_J2000
+        return eq.DEC_ICRS
 
     async def track(self, ra: float, dec: float) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", f"command rightascension={ra}"
-        )
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", f"command declination={dec}"
-        )
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command track=1"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command rightascension={ra}")
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command declination={dec}")
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command track=1")
 
     async def move(self, alt: float, az: float) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", f"command elevation={alt}"
-        )
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", f"command azimuth={az}"
-        )
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command slew=1"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command elevation={alt}")
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command azimuth={az}")
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command slew=1")
 
     @property
     def offset_ha(self) -> float:
@@ -196,29 +196,19 @@ class BROTTelescope(BROTBase):
         return self._telemetry.TELESCOPE.READY_STATE * 100.0
 
     async def power_on(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command power=1"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command power=1")
 
     async def power_on_closed(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command power=2"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command power=2")
 
     async def stop(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command stop=true"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command stop=true")
 
     async def park(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command park=true"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command park=true")
 
     async def reset(self) -> None:
-        await self._transport.publish(
-            f"{self._telescope_name}/Telescope/SET", "command reset=1"
-        )
+        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command reset=1")
 
 
 __all__ = ["BROTTelescope", "TelescopeStatus", "GlobalTelescopeStatus"]

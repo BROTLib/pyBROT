@@ -11,7 +11,14 @@ def make_transport() -> MQTTTransport:
 
 
 def make_message(topic: str, payload: str) -> Message:
-    return Message(topic=topic, payload=payload.encode("utf-8"), qos=0, retain=False, mid=0, properties=None)
+    return Message(
+        topic=topic,
+        payload=payload.encode("utf-8"),
+        qos=0,
+        retain=False,
+        mid=0,
+        properties=None,
+    )
 
 
 async def test_float_field_parsed() -> None:
@@ -59,10 +66,11 @@ async def test_bool_field_parsed() -> None:
         FLAG: bool = False
 
     transport = make_transport()
-    transport.telemetry = FakeTelemetry()  # type: ignore[assignment]
+    fake = FakeTelemetry()
+    transport.telemetry = fake  # type: ignore[assignment]
     msg = make_message("brot/Telescope/Telemetry", "0 FLAG=true")
     await transport._process_message(msg)
-    assert transport.telemetry.FLAG is True
+    assert fake.FLAG is True
 
 
 async def test_indexed_sensor_field() -> None:
@@ -108,3 +116,73 @@ async def test_int_suffix_variants(value: str) -> None:
     msg = make_message("brot/Telescope/Telemetry", f"0 TELESCOPE.CONFIG.CAPABILITIES={value}")
     await transport._process_message(msg)
     assert transport.telemetry.TELESCOPE.CONFIG.CAPABILITIES == int(value.removesuffix("i"))
+
+
+TS = "1791449700123456700"
+
+
+@pytest.mark.parametrize("suffix", ["", f" {TS}"])
+async def test_bool_field_with_optional_timestamp(suffix: str) -> None:
+    # regression test: "true <ts>" used to read as False.
+    @dataclass
+    class FakeTelemetry:
+        FLAG: bool = False
+
+    transport = make_transport()
+    fake = FakeTelemetry()
+    transport.telemetry = fake  # type: ignore[assignment]
+    await transport._process_message(make_message("brot/Telescope/Telemetry", f"0 FLAG=true{suffix}"))
+    assert fake.FLAG is True
+    assert transport.data["FLAG"] == "true"
+
+
+@pytest.mark.parametrize("suffix", ["", f" {TS}"])
+async def test_numeric_fields_with_optional_timestamp(suffix: str) -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telescope/Telemetry", f"0 TELESCOPE.READY_STATE=1.5{suffix}"))
+    await transport._process_message(
+        make_message("brot/Telescope/Telemetry", f"0 TELESCOPE.CONFIG.CAPABILITIES=5i{suffix}")
+    )
+    assert transport.telemetry.TELESCOPE.READY_STATE == 1.5
+    assert transport.telemetry.TELESCOPE.CONFIG.CAPABILITIES == 5
+
+
+@pytest.mark.parametrize("name", ["MyScope", "My Scope", "a=b", "x y=z", 'say \\"hi\\" now'])
+@pytest.mark.parametrize("suffix", ["", f" {TS}"])
+async def test_string_field_with_optional_timestamp(name: str, suffix: str) -> None:
+    transport = make_transport()
+    await transport._process_message(
+        make_message("brot/Telescope/Telemetry", f'0 TELESCOPE.INFO.NAME="{name}"{suffix}')
+    )
+    assert transport.telemetry.TELESCOPE.INFO.NAME == name
+    assert transport.data["TELESCOPE.INFO.NAME"] == f'"{name}"'
+
+
+@pytest.mark.parametrize("key", ["POSITION.EQUATORIAL.RA_ICRS", "POSITION.EQUATORIAL.RA_J2000", "OBJECT.EQUATORIAL.RA"])
+async def test_ra_converted_from_hours_by_default(key: str) -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telescope/Telemetry", f"0 {key}=2.0"))
+    obj = transport.telemetry
+    for token in key.split("."):
+        obj = getattr(obj, token)
+    assert obj == 30.0
+
+
+async def test_ra_not_converted_for_degree_plc() -> None:
+    transport = MQTTTransport(host="localhost", port=1883, ra_in_hours=False)
+    await transport._process_message(make_message("brot/Telescope/Telemetry", "0 POSITION.EQUATORIAL.RA_ICRS=30.0"))
+    assert transport.telemetry.POSITION.EQUATORIAL.RA_ICRS == 30.0
+
+
+async def test_dec_and_instrumental_ra_never_converted() -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telescope/Telemetry", "0 POSITION.EQUATORIAL.DEC_ICRS=20.0"))
+    await transport._process_message(make_message("brot/Telescope/Telemetry", "0 OBJECT.INSTRUMENTAL.RA=40.0"))
+    assert transport.telemetry.POSITION.EQUATORIAL.DEC_ICRS == 20.0
+    assert transport.telemetry.OBJECT.INSTRUMENTAL.RA == 40.0
+
+
+async def test_apparent_fields_parsed() -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telescope/Telemetry", "0 POSITION.EQUATORIAL.HA_APPARENT=1.5"))
+    assert transport.telemetry.POSITION.EQUATORIAL.HA_APPARENT == 1.5

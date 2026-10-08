@@ -1,5 +1,7 @@
 # Design/planning docs
 
+- `plans/2026-10-08-influx-timestamp-parsing.md` — parse the optional trailing Influx timestamp on
+  telemetry lines so retained values from BROTLib#38 don't read as `False`/raise, closing pyBROT#40.
 - `plans/2026-09-22-weather-sources.md` — pluggable `WeatherSource` (pyobs-weather + local
   JSON/YAML) and a `WeatherPublisher` that publishes temperature/humidity/pressure onto
   `{site}/Telescope/SET`, closing pyBROT#32.

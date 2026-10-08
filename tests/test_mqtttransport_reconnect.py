@@ -23,9 +23,7 @@ class _FakeMessages:
         drop_wait = asyncio.ensure_future(self._drop.wait())
         closing_wait = asyncio.ensure_future(self._transport._closing.wait())
         try:
-            await asyncio.wait(
-                [drop_wait, closing_wait], return_when=asyncio.FIRST_COMPLETED
-            )
+            await asyncio.wait([drop_wait, closing_wait], return_when=asyncio.FIRST_COMPLETED)
         finally:
             drop_wait.cancel()
             closing_wait.cancel()
@@ -93,7 +91,7 @@ async def test_run_retries_after_connect_failure(
     task = asyncio.create_task(transport.run())
 
     await asyncio.wait_for(transport._connected_event.wait(), timeout=1)
-    assert transport.connected is True
+    assert transport.connected
     assert attempts == [True, False]
 
     await transport.close()
@@ -127,7 +125,7 @@ async def test_publish_blocks_across_disconnect_and_reconnect(
 
     task = asyncio.create_task(transport.run())
     await asyncio.wait_for(transport._connected_event.wait(), timeout=1)
-    assert transport.connected is True
+    assert transport.connected
 
     # simulate the broker connection dropping
     drop_events[0].set()
@@ -135,7 +133,7 @@ async def test_publish_blocks_across_disconnect_and_reconnect(
         if not transport.connected:
             break
         await asyncio.sleep(0)
-    assert transport.connected is False
+    assert not transport.connected
     assert not transport._connected_event.is_set()
 
     publish_task = asyncio.create_task(transport.publish("brot/x", "cmd"))
@@ -203,9 +201,7 @@ async def test_run_stamps_telemetry_age_on_message(
     transport = MQTTTransport(host="localhost", port=1883)
     message = _Msg(topic=_Msg._Topic())
 
-    monkeypatch.setattr(
-        mqtt_module, "Client", lambda host, port: _OneShotClient(transport, message)
-    )
+    monkeypatch.setattr(mqtt_module, "Client", lambda host, port: _OneShotClient(transport, message))
 
     assert transport.telemetry_age() is None
     task = asyncio.create_task(transport.run())

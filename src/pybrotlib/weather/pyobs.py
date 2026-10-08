@@ -11,7 +11,7 @@ _SENSOR_CODES = {"temp": "temperature", "humid": "humidity", "press": "pressure"
 
 
 class PyobsWeatherSource(WeatherSource):
-    def __init__(self, base_url: str, client: httpx.AsyncClient | None = None):
+    def __init__(self, base_url: str, client: httpx.AsyncClient | None = None) -> None:
         self.base_url = base_url.rstrip("/")
         self._client = client or httpx.AsyncClient()
 

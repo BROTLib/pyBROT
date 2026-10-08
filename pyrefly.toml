@@ -1,0 +1,6 @@
+project-includes = ["src", "tests"]
+python-version = "3.11.0"
+preset = "legacy"
+
+[errors]
+redundant-cast = "warn"

@@ -1,13 +1,15 @@
 import asyncio
 import time
-from typing import Any
 
 from ..telemetry import Telemetry
 
 
 class Transport:
-    def __init__(self) -> None:
-        self.data: dict[str, Any] = {}
+    def __init__(self, ra_in_hours: bool = True) -> None:
+        # Legacy PLCs publish RA telemetry in hours, newer ones in degrees (BROTLib#37). If True, RA
+        # fields are multiplied by 15 on receipt, so Telemetry always holds degrees.
+        self.ra_in_hours = ra_in_hours
+        self.data: dict[str, str] = {}
         self.telemetry = Telemetry()
         self._connected = False
         self._closing = asyncio.Event()

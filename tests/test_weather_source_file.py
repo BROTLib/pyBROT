@@ -5,9 +5,7 @@ from pybrotlib.weather import FileWeatherSource
 
 async def test_json_source_reads_fields(tmp_path: Path) -> None:
     path = tmp_path / "weather.json"
-    path.write_text(
-        '{"temperature": 12.5, "humidity": 55.0, "pressure": 1013.2, "time": "2026-09-22T10:00:00+00:00"}'
-    )
+    path.write_text('{"temperature": 12.5, "humidity": 55.0, "pressure": 1013.2, "time": "2026-09-22T10:00:00+00:00"}')
 
     reading = await FileWeatherSource(path).read()
 
