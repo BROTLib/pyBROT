@@ -96,14 +96,23 @@ class BROTTelescope(BROTBase):
         return eq.DEC_ICRS
 
     async def track(self, ra: float, dec: float) -> None:
-        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command rightascension={ra}")
-        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command declination={dec}")
-        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command track=1")
+        topic = f"{self._telescope_name}/Telescope/SET"
+        if self._transport.multi_field_commands:
+            # one message: no buffer on the PLC that can go stale or mix two targets (BROTLib#39)
+            await self._transport.publish(topic, f"command rightascension={ra},declination={dec},track=1")
+            return
+        await self._transport.publish(topic, f"command rightascension={ra}")
+        await self._transport.publish(topic, f"command declination={dec}")
+        await self._transport.publish(topic, "command track=1")
 
     async def move(self, alt: float, az: float) -> None:
-        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command elevation={alt}")
-        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", f"command azimuth={az}")
-        await self._transport.publish(f"{self._telescope_name}/Telescope/SET", "command slew=1")
+        topic = f"{self._telescope_name}/Telescope/SET"
+        if self._transport.multi_field_commands:
+            await self._transport.publish(topic, f"command elevation={alt},azimuth={az},slew=1")
+            return
+        await self._transport.publish(topic, f"command elevation={alt}")
+        await self._transport.publish(topic, f"command azimuth={az}")
+        await self._transport.publish(topic, "command slew=1")
 
     @property
     def offset_ha(self) -> float:

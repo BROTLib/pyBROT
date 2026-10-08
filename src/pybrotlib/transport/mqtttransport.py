@@ -41,8 +41,8 @@ def _split_field(field: str) -> tuple[str, str] | None:
 
 
 class MQTTTransport(Transport):
-    def __init__(self, host: str, port: int, ra_in_hours: bool = False) -> None:
-        super().__init__(ra_in_hours=ra_in_hours)
+    def __init__(self, host: str, port: int, ra_in_hours: bool = False, multi_field_commands: bool = False) -> None:
+        super().__init__(ra_in_hours=ra_in_hours, multi_field_commands=multi_field_commands)
 
         self.host = host
         self.port = port
