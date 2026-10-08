@@ -11,7 +11,7 @@ def _msg(payload: str) -> Message:
 
 
 async def _brot(*lines: str) -> BROT:
-    transport = MQTTTransport(host="localhost", port=1883)
+    transport = MQTTTransport(host="localhost", port=1883, ra_in_hours=True)
     for line in lines:
         await transport._process_message(_msg(line))
     return BROT(transport, "brot")

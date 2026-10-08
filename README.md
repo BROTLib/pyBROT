@@ -44,10 +44,9 @@ component properties below.
 
 All angles in the telemetry and in the `BROTTelescope` properties are degrees, including right
 ascension, and `track()` takes degrees too. Legacy PLCs (before BROTLib#37) publish RA telemetry
-in hours; for those, leave `ra_in_hours=True` (the default) on the transport and pybrotlib converts
-on receipt. For PLCs that already publish degrees, pass `MQTTTransport(..., ra_in_hours=False)`.
-The consumers cannot tell the unit from the message, so set this per telescope, together with the
-PLC update.
+in hours; for those, pass `MQTTTransport(..., ra_in_hours=True)` and pybrotlib converts on receipt.
+The default (`ra_in_hours=False`) is for PLCs that already publish degrees. The unit cannot be
+detected from the message, so set this per telescope, together with the PLC update.
 
 ## Components
 
