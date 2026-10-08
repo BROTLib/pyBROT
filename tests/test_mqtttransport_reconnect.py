@@ -126,6 +126,7 @@ async def test_publish_blocks_across_disconnect_and_reconnect(
     task = asyncio.create_task(transport.run())
     await asyncio.wait_for(transport._connected_event.wait(), timeout=1)
     assert transport.connected
+    transport.plc_online = True
 
     # simulate the broker connection dropping
     drop_events[0].set()
@@ -135,6 +136,7 @@ async def test_publish_blocks_across_disconnect_and_reconnect(
         await asyncio.sleep(0)
     assert not transport.connected
     assert not transport._connected_event.is_set()
+    assert transport.plc_online is None
 
     publish_task = asyncio.create_task(transport.publish("brot/x", "cmd"))
     await asyncio.sleep(0)

@@ -221,3 +221,20 @@ async def test_publish_times_out_when_not_connected(monkeypatch: pytest.MonkeyPa
     transport = make_transport()
     with pytest.raises(TimeoutError):
         await transport.publish("brot/Telescope/SET", "x")
+
+
+@pytest.mark.parametrize(("payload", "expected"), [("online", True), ("offline", False)])
+async def test_plc_status_topic(payload: str, expected: bool, caplog: pytest.LogCaptureFixture) -> None:
+    transport = make_transport()
+    assert transport.plc_online is None
+    await transport._process_message(make_message("brot/Telemetry/status", payload))
+    assert transport.plc_online is expected
+    assert "Malformed telemetry" not in caplog.text
+
+
+async def test_plc_status_unexpected_payload_keeps_state(caplog: pytest.LogCaptureFixture) -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telemetry/status", "online"))
+    await transport._process_message(make_message("brot/Telemetry/status", "garbage"))
+    assert transport.plc_online is True
+    assert "Unexpected PLC status" in caplog.text

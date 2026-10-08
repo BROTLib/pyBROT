@@ -90,6 +90,7 @@ class MQTTTransport(Transport):
                         await asyncio.sleep(0)
             except MqttError as e:
                 self._connected = False
+                self.plc_online = None
                 self._connected_event.clear()
                 if self._closing.is_set():
                     return
@@ -108,9 +109,20 @@ class MQTTTransport(Transport):
                 backoff = min(backoff * 2, _MAX_BACKOFF)
             finally:
                 self._connected = False
+                self.plc_online = None
                 self._connected_event.clear()
 
     async def _process_message(self, msg: Message) -> None:
+        # PLC presence (MQTT last-will): plain "online"/"offline", not Influx line protocol
+        if msg.topic.value.endswith("/Telemetry/status"):
+            if isinstance(msg.payload, bytes):
+                text = msg.payload.decode("utf-8", errors="replace").strip()
+                if text in ("online", "offline"):
+                    self.plc_online = text == "online"
+                else:
+                    log.warning("Unexpected PLC status on %s: %r", msg.topic.value, text)
+            return
+
         # Telemetry handling
         if "Telemetry" in msg.topic.value:
             # we only want bytes...
