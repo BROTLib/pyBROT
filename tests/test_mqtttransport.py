@@ -186,3 +186,55 @@ async def test_apparent_fields_parsed() -> None:
     transport = make_transport()
     await transport._process_message(make_message("brot/Telescope/Telemetry", "0 POSITION.EQUATORIAL.HA_APPARENT=1.5"))
     assert transport.telemetry.POSITION.EQUATORIAL.HA_APPARENT == 1.5
+
+
+class _RecordingClient:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, bytes, int]] = []
+
+    async def publish(self, topic: str, payload: bytes, qos: int = 0) -> None:
+        self.calls.append((topic, payload, qos))
+
+
+def make_connected_transport() -> tuple[MQTTTransport, _RecordingClient]:
+    transport = make_transport()
+    client = _RecordingClient()
+    transport._client = client  # type: ignore[assignment]
+    transport._connected_event.set()
+    return transport, client
+
+
+async def test_publish_defaults_to_qos_1() -> None:
+    transport, client = make_connected_transport()
+    await transport.publish("brot/Telescope/SET", "command stop=true")
+    assert client.calls == [("brot/Telescope/SET", b"command stop=true", 1)]
+
+
+async def test_publish_qos_can_be_overridden() -> None:
+    transport, client = make_connected_transport()
+    await transport.publish("brot/Telescope/SET", "x", qos=0)
+    assert client.calls[0][2] == 0
+
+
+async def test_publish_times_out_when_not_connected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("pybrotlib.transport.mqtttransport._PUBLISH_TIMEOUT", 0.01)
+    transport = make_transport()
+    with pytest.raises(TimeoutError):
+        await transport.publish("brot/Telescope/SET", "x")
+
+
+@pytest.mark.parametrize(("payload", "expected"), [("online", True), ("offline", False)])
+async def test_plc_status_topic(payload: str, expected: bool, caplog: pytest.LogCaptureFixture) -> None:
+    transport = make_transport()
+    assert transport.plc_online is None
+    await transport._process_message(make_message("brot/Telemetry/status", payload))
+    assert transport.plc_online is expected
+    assert "Malformed telemetry" not in caplog.text
+
+
+async def test_plc_status_unexpected_payload_keeps_state(caplog: pytest.LogCaptureFixture) -> None:
+    transport = make_transport()
+    await transport._process_message(make_message("brot/Telemetry/status", "online"))
+    await transport._process_message(make_message("brot/Telemetry/status", "garbage"))
+    assert transport.plc_online is True
+    assert "Unexpected PLC status" in caplog.text

@@ -12,6 +12,9 @@ class Transport:
         self.data: dict[str, str] = {}
         self.telemetry = Telemetry()
         self._connected = False
+        # PLC presence from the retained {site}/Telemetry/status last-will topic; None = unknown
+        # (no status message seen yet, broker connection down, or PLC without last-will support)
+        self.plc_online: bool | None = None
         self._closing = asyncio.Event()
         self._last_message_at: float | None = None
 
@@ -21,7 +24,7 @@ class Transport:
     async def run(self) -> None:
         pass
 
-    async def publish(self, topic: str, message: str) -> None:
+    async def publish(self, topic: str, message: str, qos: int = 1) -> None:
         pass
 
     @property

@@ -22,6 +22,9 @@ _RA_FIELDS = frozenset(
 _INITIAL_BACKOFF = 1.0
 _MAX_BACKOFF = 30.0
 
+# upper bound for waiting on a connection plus the broker's PUBACK (QoS 1) in publish()
+_PUBLISH_TIMEOUT = 10.0
+
 
 def _split_field(field: str) -> tuple[str, str] | None:
     """Split an Influx line-protocol field set into (key, value), dropping an optional trailing timestamp."""
@@ -49,14 +52,20 @@ class MQTTTransport(Transport):
     def __str__(self) -> str:
         return f"MQTT(host={self.host}, port={self.port})"
 
-    async def publish(self, topic: str, message: str) -> None:
+    async def publish(self, topic: str, message: str, qos: int = 1) -> None:
         # reuse the persistent connection from run() instead of opening a fresh one per
         # call -- each connect/publish/disconnect cycle used to expose every command to
         # paho-mqtt's blocking (non-executor) socket send, which could stall the whole
         # event loop for several seconds on a slow/congested broker connection.
+        # QoS 1 (default): the broker delivers at the lower of publisher and subscriber QoS, and the
+        # PLC subscribes to SET at QoS 1. The call waits for the PUBACK, so it raises TimeoutError
+        # (or MqttError) instead of silently losing a command on a dead connection.
+        await asyncio.wait_for(self._publish(topic, message, qos), timeout=_PUBLISH_TIMEOUT)
+
+    async def _publish(self, topic: str, message: str, qos: int) -> None:
         await self._connected_event.wait()
         assert self._client is not None
-        await self._client.publish(topic, payload=message.encode("utf-8"))
+        await self._client.publish(topic, payload=message.encode("utf-8"), qos=qos)
 
     async def run(self) -> None:
         backoff = _INITIAL_BACKOFF
@@ -81,6 +90,7 @@ class MQTTTransport(Transport):
                         await asyncio.sleep(0)
             except MqttError as e:
                 self._connected = False
+                self.plc_online = None
                 self._connected_event.clear()
                 if self._closing.is_set():
                     return
@@ -99,9 +109,20 @@ class MQTTTransport(Transport):
                 backoff = min(backoff * 2, _MAX_BACKOFF)
             finally:
                 self._connected = False
+                self.plc_online = None
                 self._connected_event.clear()
 
     async def _process_message(self, msg: Message) -> None:
+        # PLC presence (MQTT last-will): plain "online"/"offline", not Influx line protocol
+        if msg.topic.value.endswith("/Telemetry/status"):
+            if isinstance(msg.payload, bytes):
+                text = msg.payload.decode("utf-8", errors="replace").strip()
+                if text in ("online", "offline"):
+                    self.plc_online = text == "online"
+                else:
+                    log.warning("Unexpected PLC status on %s: %r", msg.topic.value, text)
+            return
+
         # Telemetry handling
         if "Telemetry" in msg.topic.value:
             # we only want bytes...
