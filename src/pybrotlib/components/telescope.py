@@ -9,6 +9,7 @@ class TelescopeStatus(Enum):
     ONLINE = "online"
     ERROR = "error"
     INITIALIZING = "initializing"
+    CALIBRATING = "calibrating"
     PARKING = "parking"
     UNKNOWN = "unknown"
 
@@ -163,6 +164,8 @@ class BROTTelescope(BROTBase):
                 return TelescopeStatus.PARKING
             case 0.7:
                 return TelescopeStatus.INITIALIZING
+            case 0.8:
+                return TelescopeStatus.CALIBRATING
             case 1.0:
                 return TelescopeStatus.ONLINE
             case -1.0:
