@@ -92,3 +92,11 @@ publishes the fields it does have.
 uv sync --group dev
 uv run pytest
 ```
+
+## Telescope readiness
+
+`brot.telescope.status` maps `TELESCOPE.READY_STATE`: 0 parked, 0.3 parking,
+0.7 initializing, 0.8 calibrating, 1 online, and -1 error. Calibration includes
+automatic startup positioning; updated PLC controllers publish 1 only once the
+whole startup has finished. Normal subsequent movement remains online and has
+its own motion state. Older firmware that publishes 1 early still needs updating.
